@@ -178,7 +178,7 @@ def get_argparser():
     #                     help="restore from checkpoint")
     # parser.add_argument("--ckpt",default='F:/Third_paper/Checkpoint/Segmentation/Outpainted_20_percent_left_right_below_up/CamVid_Firstfold/DeeplabV3_Plus_0.01/best_deeplabv3plus_resnet50_camvid_sample_os16.pth', type=str,
     #                     help="restore from checkpoint")
-    parser.add_argument("--ckpt",default='F:/Third_paper/Checkpoint/Segmentation/SegGAN/CamVid_Firstfold/Original/smp_unetplusplus_resnetmy_2/generator/latest_deeplabv3plus_resnet50_camvid_sample_os16.pth', type=str,
+    parser.add_argument("--ckpt",default='F:/Third_paper/Checkpoint/Segmentation/SegGAN/CamVid_Firstfold/12.5_percent/lr_0.0001_0.1lossG_GAN_multiscaleDiscriminator/latest_deeplabv3plus_resnet50_camvid_sample_os16.pth', type=str,
                         help="restore from checkpoint")
     # parser.add_argument("--ckpt",default='D:/checkpoint/Segmentation/camvid/torch_deeplabv3plus_secondfold/original/best_deeplabv3plus_resnet50_camvid_sample_os16.pth', type=str,
     #                     help="restore from checkpoint")
@@ -909,6 +909,8 @@ def main():
 
                 # Total loss
                 loss_D = (loss_D_real + loss_D_fake) / 2
+                print("Discriminator : ", loss_D)
+                print("------------------------------------------")
                 loss_D.backward()
                 optimizer_D.step()
 
@@ -986,7 +988,7 @@ def main():
                 if (cur_itrs) % opts.val_interval == 0:
                     # save_ckpt('checkpoints/latest_%s_%s_os%d.pth' %
                     #           (opts.model, opts.dataset, opts.output_stride))
-                    save_ckpt_generator('F:/Third_paper/Checkpoint/Segmentation/SegGAN/CamVid_Firstfold/12.5_percent/lr_0.0001_0.1lossG_GAN_multiscaleDiscriminator/latest_%s_%s_os%d.pth' %
+                    save_ckpt_generator('F:/Third_paper/Checkpoint/Segmentation/SegGAN/CamVid_Firstfold/12.5_percent/lr_0.0001_0.1lossG_GAN_multiscaleDiscriminator_2/latest_%s_%s_os%d.pth' %
                               (opts.model, opts.dataset, opts.output_stride))
                     # save_ckpt_discriminator('F:/Third_paper/Checkpoint/Segmentation/Outpainted_20_percent_left_right_below_up/CamVid_Firstfold/DeeplabV3_Plus_0.01/latest_%s_%s_os%d.pth' %
                     #           (opts.model, opts.dataset, opts.output_stride))
@@ -1000,7 +1002,7 @@ def main():
                         best_score = val_score['Mean IoU']
                         # save_ckpt('checkpoints/best_%s_%s_os%d.pth' %
                         #           (opts.model, opts.dataset,opts.output_stride))
-                        save_ckpt_generator('F:/Third_paper/Checkpoint/Segmentation/SegGAN/CamVid_Firstfold/12.5_percent/lr_0.0001_0.1lossG_GAN_multiscaleDiscriminator/best_%s_%s_os%d.pth' %
+                        save_ckpt_generator('F:/Third_paper/Checkpoint/Segmentation/SegGAN/CamVid_Firstfold/12.5_percent/lr_0.0001_0.1lossG_GAN_multiscaleDiscriminator_2/best_%s_%s_os%d.pth' %
                                   (opts.model, opts.dataset, opts.output_stride))
                         # save_ckpt_discriminator('F:/Third_paper/Checkpoint/Segmentation/Outpainted_20_percent_left_right_below_up/CamVid_Firstfold/DeeplabV3_Plus_0.01/best_%s_%s_os%d.pth' %
                         #           (opts.model, opts.dataset, opts.output_stride))
@@ -1022,7 +1024,7 @@ def main():
                             concat_img = np.concatenate((img, target, lbl), axis=2)  # concat along width
                             vis.vis_image('Sample %d' % k, concat_img)
 
-                    save_ckpt_generator('F:/Third_paper/Checkpoint/Segmentation/SegGAN/CamVid_Firstfold/12.5_percent/lr_0.0001_0.1lossG_GAN_multiscaleDiscriminator/_%s_%s_%s_os%d.pth' %
+                    save_ckpt_generator('F:/Third_paper/Checkpoint/Segmentation/SegGAN/CamVid_Firstfold/12.5_percent/lr_0.0001_0.1lossG_GAN_multiscaleDiscriminator_2/_%s_%s_%s_os%d.pth' %
                               (cur_epochs, opts.model, opts.dataset, opts.output_stride))
                     # save_ckpt_discriminator('F:/Third_paper/Checkpoint/Segmentation/SegGAN/CamVid_Firstfold/Original/Standard_UNet_generator/_%s_%s_%s_os%d.pth' %
                     #           (cur_epochs, opts.model, opts.dataset, opts.output_stride))
@@ -1034,8 +1036,8 @@ def main():
                     df_train_loss = pd.DataFrame(total_train_loss_G)
                     df_train_miou = pd.DataFrame(total_train_miou)
 
-                    df_train_miou.to_csv('F:/Third_paper/Checkpoint/Segmentation/SegGAN/CamVid_Firstfold/12.5_percent/lr_0.0001_0.1lossG_GAN_multiscaleDiscriminator/train_miou_2.csv', index=False)
-                    df_train_loss.to_csv('F:/Third_paper/Checkpoint/Segmentation/SegGAN/CamVid_Firstfold/12.5_percent/lr_0.0001_0.1lossG_GAN_multiscaleDiscriminator/train_loss_2.csv', index=False)
+                    df_train_miou.to_csv('F:/Third_paper/Checkpoint/Segmentation/SegGAN/CamVid_Firstfold/12.5_percent/lr_0.0001_0.1lossG_GAN_multiscaleDiscriminator_2/train_miou_2.csv', index=False)
+                    df_train_loss.to_csv('F:/Third_paper/Checkpoint/Segmentation/SegGAN/CamVid_Firstfold/12.5_percent/lr_0.0001_0.1lossG_GAN_multiscaleDiscriminator_2/train_loss_2.csv', index=False)
 
 
                     # plt.plot(total_train_miou)
