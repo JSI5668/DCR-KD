@@ -25,3 +25,12 @@ def initialize_head(module):
             nn.init.xavier_uniform_(m.weight)
             if m.bias is not None:
                 nn.init.constant_(m.bias, 0)
+
+
+def initialize_conv1x1(conv1x1):
+    """1x1 convolution 레이어들의 초기화 함수"""
+    for name, layer in conv1x1.items():
+        if isinstance(layer, nn.Conv2d):
+            nn.init.kaiming_uniform_(layer.weight, mode="fan_in", nonlinearity="relu")
+            if layer.bias is not None:
+                nn.init.constant_(layer.bias, 0)

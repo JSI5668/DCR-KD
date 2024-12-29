@@ -4,8 +4,8 @@ from . import decoders
 from . import losses
 from . import metrics
 
-from .decoders.unet import Unet
-from .decoders.unetplusplus import UnetPlusPlus
+from .decoders.unet import Unet, Unet_For_GradCAM
+from .decoders.unetplusplus import UnetPlusPlus_teacher, UnetPlusPlus, UnetPlusPlus_student, UnetPlusPlus_teacher_GradCAM
 from .decoders.manet import MAnet
 from .decoders.linknet import Linknet
 from .decoders.fpn import FPN

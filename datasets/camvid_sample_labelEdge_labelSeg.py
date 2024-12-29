@@ -1,14 +1,13 @@
-import json
 import os
-from collections import namedtuple
-
-import torch
-import torch.utils.data as data
 from PIL import Image
+import torch
+from torch.utils.data import Dataset, DataLoader
+from collections import namedtuple
+from torchvision import transforms
 import numpy as np
 
+class RGB2_labelEdge_labelSeg(Dataset):
 
-class Camvid_sample(data.Dataset):
     """Cityscapes <http://www.cityscapes-dataset.com/> Dataset.
 
     **Parameters:**
@@ -50,18 +49,19 @@ class Camvid_sample(data.Dataset):
     def __init__(self, root, split='train', mode='fine', target_type='semantic', transform=None):  #추가 1: root_2
         self.root = os.path.expanduser(root)
         # self.root_2 = os.path.expanduser(root_2) #추가 2
-        self.mode = 'gtFine'
+        self.mode_edge = 'gtFine_edge'
+        self.mode_seg = 'gtFine_seg'
         self.target_type = target_type
         self.images_dir = os.path.join(self.root + '/', 'leftImg8bit/', split)
-        # self.images_dir_2 = os.path.join(self.root_2 + '/', 'leftImg8bit/', split)  ### 추가 3
 
-        self.targets_dir = os.path.join(self.root + '/', self.mode + '/', split)
-        # self.targets_dir_2 = os.path.join(self.root_2 + '/', self.mode + '/', split) ## 추가 4
+        self.targets_dir_edge = os.path.join(self.root + '/', self.mode_edge + '/', split)
+        self.targets_dir_seg = os.path.join(self.root + '/', self.mode_seg + '/', split)
         self.transform = transform
 
         self.split = split
         self.images = []
-        self.targets = []
+        self.targets_edge = []
+        self.targets_seg = []
 
         # self.images_2 = [] ## 추가 5
         # self.targets_2 = [] ##추가 6
@@ -70,19 +70,22 @@ class Camvid_sample(data.Dataset):
             raise ValueError('Invalid split for mode! Please use split="train", split="test"'
                              ' or split="val"')
 
-        if not os.path.isdir(self.images_dir) or not os.path.isdir(self.targets_dir):
+        if not os.path.isdir(self.images_dir) or not os.path.isdir(self.targets_dir_edge):
             raise RuntimeError('Dataset not found or incomplete. Please make sure all required folders for the'
                                ' specified "split" and "mode" are inside the "root" directory')
 
         for city in os.listdir(self.images_dir):
             img_dir = os.path.join(self.images_dir + '/', city)
-            target_dir = os.path.join(self.targets_dir + '/', city)
+            target_dir_edge = os.path.join(self.targets_dir_edge + '/', city)
+            target_dir_seg = os.path.join(self.targets_dir_seg + '/', city)
 
             for file_name in os.listdir(img_dir):
                 self.images.append(os.path.join(img_dir + '/', file_name))
+                self.targets_edge.append(os.path.join(target_dir_edge + '/', file_name))
+                self.targets_seg.append(os.path.join(target_dir_seg + '/', file_name))
 
-                self.targets.append(os.path.join(target_dir + '/', file_name))
-
+    def __len__(self):
+        return len(self.images)
 
     @classmethod
     def encode_target(cls, target):
@@ -95,6 +98,7 @@ class Camvid_sample(data.Dataset):
         # target = target.astype('uint8') + 1
         return cls.train_id_to_color[target]
 
+
     def __getitem__(self, index):
         """
         Args:
@@ -104,40 +108,15 @@ class Camvid_sample(data.Dataset):
             than one item. Otherwise target is a json object if target_type="polygon", else the image segmentation.
         """
         image = Image.open(self.images[index]).convert('RGB')
-        target = Image.open(self.targets[index])
+        target_edge = Image.open(self.targets_edge[index])
+        target_seg = Image.open(self.targets_seg[index])
 
-        # image_2 = Image.open(self.images_2[index]).convert('RGB') #추가 8
-        # target_2 = Image.open(self.targets_2[index])
-
+        # img_name = self.images[index].split('/')[-1].split('.')[0]
         if self.transform:
-            image, target = self.transform(image, target)
-            # image_2, target_2 = self.transform(image_2, target_2) #추가 9
+            image, target_edge, target_seg = self.transform(image, target_edge, target_seg)
+            # image, target_seg = self.transform(image, target_seg)
 
-        # image = torch.cat((image, image_2), dim = 0) #추가 10
+        target_seg = self.encode_target(target_seg)
 
-        target = self.encode_target(target)
-        # target_2 = self.encode_target(target_2) #추가 11
-
-        # target = torch.cat((target, target_2), dim=0) #추가 12
-
-        return image, target
-
-    def __len__(self):
-        return len(self.images)
-
-    def _load_json(self, path):
-        with open(path, 'r') as file:
-            data = json.load(file)
-        return data
-
-    def _get_target_suffix(self, mode, target_type):
-        if target_type == 'instance':
-            return '{}_instanceIds.png'.format(mode)
-        elif target_type == 'semantic':
-            return '{}_labelIds.png'.format(mode)
-        elif target_type == 'color':
-            return '{}_color.png'.format(mode)
-        elif target_type == 'polygon':
-            return '{}_polygons.json'.format(mode)
-        elif target_type == 'depth':
-            return '{}_disparity.png'.format(mode)
+        return image, target_edge, target_seg
+        # return image, target_seg

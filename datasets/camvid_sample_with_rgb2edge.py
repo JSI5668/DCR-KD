@@ -6,9 +6,10 @@ import torch
 import torch.utils.data as data
 from PIL import Image
 import numpy as np
+import torchvision.transforms.functional as TF
 
 
-class Camvid_sample(data.Dataset):
+class Camvid_sample_with_rgb2edge(data.Dataset):
     """Cityscapes <http://www.cityscapes-dataset.com/> Dataset.
 
     **Parameters:**
@@ -62,6 +63,7 @@ class Camvid_sample(data.Dataset):
         self.split = split
         self.images = []
         self.targets = []
+        self.edges = []
 
         # self.images_2 = [] ## 추가 5
         # self.targets_2 = [] ##추가 6
@@ -74,14 +76,31 @@ class Camvid_sample(data.Dataset):
             raise RuntimeError('Dataset not found or incomplete. Please make sure all required folders for the'
                                ' specified "split" and "mode" are inside the "root" directory')
 
-        for city in os.listdir(self.images_dir):
-            img_dir = os.path.join(self.images_dir + '/', city)
-            target_dir = os.path.join(self.targets_dir + '/', city)
+        city_img = os.listdir(self.images_dir)[0]
+        city_edge = os.listdir(self.images_dir)[1]
 
-            for file_name in os.listdir(img_dir):
-                self.images.append(os.path.join(img_dir + '/', file_name))
+        img_dir = os.path.join(self.images_dir + '/', city_img)
+        target_dir = os.path.join(self.targets_dir + '/', city_img)
+        edge_dir = os.path.join(self.images_dir + '/', city_edge)
 
-                self.targets.append(os.path.join(target_dir + '/', file_name))
+        for file_name in os.listdir(img_dir):
+            self.images.append(os.path.join(img_dir + '/', file_name))
+            # target_name = '{}_{}'.format(file_name.split('_leftImg8bit')[0],
+            #                              self._get_target_suffix(self.mode, self.target_type))
+            # self.targets.append(os.path.join(target_dir + '/', target_name))
+            self.targets.append(os.path.join(target_dir + '/', file_name))
+            self.edges.append(os.path.join(edge_dir + '/', file_name))
+
+        # for city in os.listdir(self.images_dir):
+        #     img_dir = os.path.join(self.images_dir + '/', city)
+        #     target_dir = os.path.join(self.targets_dir + '/', city)
+        #
+        #     for file_name in os.listdir(img_dir):
+        #         self.images.append(os.path.join(img_dir + '/', file_name))
+        #         # target_name = '{}_{}'.format(file_name.split('_leftImg8bit')[0],
+        #         #                              self._get_target_suffix(self.mode, self.target_type))
+        #         # self.targets.append(os.path.join(target_dir + '/', target_name))
+        #         self.targets.append(os.path.join(target_dir + '/', file_name))
 
 
     @classmethod
@@ -106,21 +125,14 @@ class Camvid_sample(data.Dataset):
         image = Image.open(self.images[index]).convert('RGB')
         target = Image.open(self.targets[index])
 
-        # image_2 = Image.open(self.images_2[index]).convert('RGB') #추가 8
-        # target_2 = Image.open(self.targets_2[index])
+        image_edge = Image.open(self.edges[index])
 
         if self.transform:
-            image, target = self.transform(image, target)
-            # image_2, target_2 = self.transform(image_2, target_2) #추가 9
-
-        # image = torch.cat((image, image_2), dim = 0) #추가 10
+            image, target, image_edge = self.transform(image, target, image_edge)
 
         target = self.encode_target(target)
-        # target_2 = self.encode_target(target_2) #추가 11
 
-        # target = torch.cat((target, target_2), dim=0) #추가 12
-
-        return image, target
+        return image, target, image_edge
 
     def __len__(self):
         return len(self.images)

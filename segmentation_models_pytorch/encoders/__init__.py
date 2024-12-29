@@ -1,6 +1,7 @@
 import timm
 import functools
 import torch.utils.model_zoo as model_zoo
+import torch
 
 from .resnet import resnet_encoders
 from .dpn import dpn_encoders
@@ -82,14 +83,84 @@ def get_encoder(name, in_channels=3, depth=5, weights=None, output_stride=32, **
                     list(encoders[name]["pretrained_settings"].keys()),
                 )
             )
-        encoder.load_state_dict(model_zoo.load_url(settings["url"]))
+        encoder.load_state_dict(model_zoo.load_url(settings["url"])) ##--> 원래 있던 것
+
+# ##############################################################################################
+#         state_dict = model_zoo.load_url(settings["url"])
+#
+#     # 첫 번째 Convolution 레이어의 가중치 초기화
+#         with torch.no_grad():
+#             if in_channels == 4 and 'conv1.weight' in state_dict:
+#                 # 기존 3채널 가중치 복사
+#                 new_conv1_weight = torch.zeros((state_dict['conv1.weight'].size(0), in_channels, 7, 7))
+#                 new_conv1_weight[:, :3, :, :] = state_dict['conv1.weight']
+#                 # 새로운 채널에 대한 가중치 초기화
+#                 new_conv1_weight[:, 3, :, :] = state_dict['conv1.weight'][:, 0, :, :]
+#                 encoder.conv1.weight.copy_(new_conv1_weight)
+#
+#         # pop 'conv1.weight' after initializing the new conv1
+#         state_dict.pop('conv1.weight', None)
+#         encoder.load_state_dict(state_dict, strict=False)
+# ##############################################################################################
+
+    encoder.set_in_channels(in_channels, pretrained=weights is not None) ## 원래 있었던 것
+    if output_stride != 32:
+        encoder.make_dilated(output_stride)
+
+    return encoder
+
+def get_encoder_input4channels_edgergbconcat(name, in_channels=3, depth=5, weights=None, output_stride=32, **kwargs):
+
+    if name.startswith("tu-"):
+        name = name[3:]
+        encoder = TimmUniversalEncoder(
+            name=name,
+            in_channels=in_channels,
+            depth=depth,
+            output_stride=output_stride,
+            pretrained=weights is not None,
+            **kwargs,
+        )
+        return encoder
+
+    try:
+        Encoder = encoders[name]["encoder"]
+    except KeyError:
+        raise KeyError("Wrong encoder name `{}`, supported encoders: {}".format(name, list(encoders.keys())))
+
+    params = encoders[name]["params"]
+    params.update(depth=depth)
+    encoder = Encoder(**params)
+
+    if weights is not None:
+        try:
+            settings = encoders[name]["pretrained_settings"][weights]
+        except KeyError:
+            raise KeyError(
+                "Wrong pretrained weights `{}` for encoder `{}`. Available options are: {}".format(
+                    weights,
+                    name,
+                    list(encoders[name]["pretrained_settings"].keys()),
+                )
+            )
+        state_dict = model_zoo.load_url(settings["url"])
+
+        # 첫 번째 Convolution 레이어의 가중치 초기화
+        with torch.no_grad():
+            if in_channels == 4 and 'conv1.weight' in state_dict:
+                # 기존 3채널 가중치 복사
+                encoder.conv1.weight[:, :3, :, :] = state_dict['conv1.weight']
+                # 새로운 채널에 대한 가중치 초기화
+                encoder.conv1.weight[:, 3, :, :] = state_dict['conv1.weight'][:, 0, :, :]
+                state_dict.pop('conv1.weight', None)
+
+        encoder.load_state_dict(state_dict, strict=False)
 
     encoder.set_in_channels(in_channels, pretrained=weights is not None)
     if output_stride != 32:
         encoder.make_dilated(output_stride)
 
     return encoder
-
 
 def get_encoder_names():
     return list(encoders.keys())
